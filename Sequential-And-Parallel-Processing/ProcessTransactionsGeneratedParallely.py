@@ -1,6 +1,7 @@
 import datetime
 import pymongo
 import pandas
+import math
 from concurrent.futures import ThreadPoolExecutor
 
 
@@ -18,13 +19,19 @@ def processTransactionsAndReturn(shopNameAndTime):
         "item_weight": [],
         "item_volume": [],
         "sold": [],
-        "sold_amount": [],
         "member": [],
         "walk_in": [],
         "male": [],
         "female": [],
-        "age": []
+        "age": [],
+        "pay_cash": [],
+        "pay_card": [],
+        "pay_ewallet": []
     }
+
+    for shopNumber in range(1, 46):
+        shopName = "Shop " + str(shopNumber)
+        allItems[shopName] = []
 
     startOfHour = datetime.datetime(year, month, day, hour, 0, 0)
     endOfHour = datetime.datetime(year, month, day, hour, 59, 59)
@@ -39,51 +46,65 @@ def processTransactionsAndReturn(shopNameAndTime):
                           {"date_time": {"$lte": endOfHour}},  # lte: less than or equal to
                           {"shop_name": str(shopName)}]}):
 
-            # Line 43-147 reused script in ProcessTransactionsGeneratedSequentially.py
+            # Most of the following lines reused script in ProcessTransactionsGeneratedSequentially.py
             # Skip if item is missing
             if "item" not in transaction.keys():
-                continue
+                return
 
             # Set isMember flag
             isMember = False
-            if "member" in transaction.keys():
+            if "member" in transaction.keys() and type(transaction["member"]) == str:
                 member = transaction["member"]
-                if type(member) == str:
-                    member = member.strip()
-                    member = member.lower()
-                    if member == "yes":
-                        isMember = True
+                member = member.strip()
+                member = member.lower()
+                if member == "yes":
+                    isMember = True
 
             # Set isMale or isFemale flag
             isMale = False
             isFemale = False
-            if "gender" in transaction.keys():
+            if "gender" in transaction.keys() and type(transaction["gender"]) == str:
                 gender = transaction["gender"]
-                if type(gender) == str:
-                    gender = gender.strip()
-                    gender = gender.lower()
-                    if gender == "male":
-                        isMale = True
-                    elif gender == "female":
-                        isFemale = True
+                gender = gender.strip()
+                gender = gender.lower()
+                if gender == "male":
+                    isMale = True
+                elif gender == "female":
+                    isFemale = True
 
             # Set age value
-            if "age" in transaction.keys():
+            if "age" in transaction.keys() and type(transaction["age"]) == int and 18 <= transaction["age"] <= 150:
                 age = transaction["age"]
-                if type(age) == int and age >= 18 and age <= 150:
-                    pass
-                else:
-                    age = 0
             else:
                 age = 0
+
+            # Set pay method flag
+            payCash = False
+            payCard = False
+            payEWallet = False
+            if "pay_method" in transaction.keys() and type(transaction["pay_method"]) == str:
+                payMethod = transaction["pay_method"]
+                payMethod = payMethod.strip()
+                payMethod = payMethod.lower()
+                if payMethod == "cash":
+                    payCash = True
+                elif payMethod == "card":
+                    payCard = True
+                elif payMethod == "e-wallet":
+                    payEWallet = True
 
             for item in transaction["item"]:
 
                 # Skip if item id is missing
-                if "item_id" not in item:
+                if "item_id" not in item.keys():
                     continue
 
                 item_id = item["item_id"]
+
+                # Skip if item_id is NaN
+                if type(item_id) == float and math.isnan(item_id):
+                    continue
+
                 if item_id not in allItems["item_id"]:  # New item
                     allItems["item_id"].append(item_id)
                     allItems["name"].append(None)
@@ -92,37 +113,49 @@ def processTransactionsAndReturn(shopNameAndTime):
                     allItems["item_weight"].append(None)
                     allItems["item_volume"].append(None)
                     allItems["sold"].append(0)
-                    allItems["sold_amount"].append(0)
                     allItems["member"].append(0)
                     allItems["walk_in"].append(0)
                     allItems["male"].append(0)
                     allItems["female"].append(0)
                     allItems["age"].append(0)
+                    allItems["pay_cash"].append(0)
+                    allItems["pay_card"].append(0)
+                    allItems["pay_ewallet"].append(0)
+
+                    for shopNumber in range(1, 46):
+                        shop_Name = "Shop " + str(shopNumber)
+                        allItems[shop_Name].append(0)
+
                 item_index = allItems["item_id"].index(item_id)
 
                 # Basic information of the item
-                if allItems["name"][item_index] is None and "name" in item.keys():
+                if allItems["name"][item_index] is None and "name" in item.keys() and type(item["name"]) == str:
                     allItems["name"][item_index] = item["name"]
 
-                if allItems["price"][item_index] is None and "price" in item.keys():
-                    allItems["price"][item_index] = item["price"]
+                if allItems["price"][item_index] is None and "price" in item.keys() and type(item["price"]) in (
+                int, float):
+                    price = item["price"]
+                    if not math.isnan(price):
+                        allItems["price"][item_index] = price
 
-                if allItems["category"][item_index] is None and "category" in item.keys():
+                if allItems["category"][item_index] is None and "category" in item.keys() and type(
+                        item["category"]) == str:
                     allItems["category"][item_index] = item["category"]
 
-                if allItems["item_weight"][item_index] is None and "weight" in item.keys():
-                    allItems["item_weight"][item_index] = item["weight"]
+                if allItems["item_weight"][item_index] is None and "weight" in item.keys() and type(item["weight"]) in (
+                int, float):
+                    weight = item["weight"]
+                    if not math.isnan(weight):
+                        allItems["item_weight"][item_index] = weight
 
-                if allItems["item_volume"][item_index] is None and "volume" in item.keys():
-                    allItems["item_volume"][item_index] = item["volume"]
+                if allItems["item_volume"][item_index] is None and "volume" in item.keys() and type(item["volume"]) in (
+                int, float):
+                    volume = item["volume"]
+                    if not math.isnan(volume):
+                        allItems["item_volume"][item_index] = volume
 
-                # Increment the total number of items sold and update the total sales amount and
-                # the total weight or volume sold
+                # Increment the total number of items sold
                 allItems["sold"][item_index] = allItems["sold"][item_index] + 1
-
-                if allItems["price"][item_index] is not None:
-                    allItems["sold_amount"][item_index] = allItems["sold_amount"][item_index] + allItems["price"][
-                        item_index]
 
                 # Increment the total number of member or walk-in person buying the item; if the current
                 # person is member, increment the total number of male or female and update the average
@@ -146,6 +179,17 @@ def processTransactionsAndReturn(shopNameAndTime):
                             averageAge = (averageAge + age) / 2
                             allItems["age"][item_index] = averageAge
 
+                # Increment the number of people using the relevant pay method and buying at the relevant shop
+                if payCash:
+                    allItems["pay_cash"][item_index] = allItems["pay_cash"][item_index] + 1
+                elif payCard:
+                    allItems["pay_card"][item_index] = allItems["pay_card"][item_index] + 1
+                elif payEWallet:
+                    allItems["pay_ewallet"][item_index] = allItems["pay_ewallet"][item_index] + 1
+
+                if shopName in allItems.keys():
+                    allItems[shopName][item_index] = allItems[shopName][item_index] + 1
+
     return allItems
 
 
@@ -162,20 +206,26 @@ def processTransactionsParallely(year, month, day, numberOfThreads):
         "item_weight": [],
         "item_volume": [],
         "sold": [],
-        "sold_amount": [],
         "member": [],
         "walk_in": [],
         "male": [],
         "female": [],
-        "age": []
+        "age": [],
+        "pay_cash": [],
+        "pay_card": [],
+        "pay_ewallet": []
     }
+
+    for shopNumber in range(1, 46):
+        shop_Name = "Shop " + str(shopNumber)
+        allItemsMaster[shop_Name] = []
 
     # List of all shop names and all hours in the day
     listOfShopNameAndTime = []
     for shopNumber in range(1, 46):
-        shopName = "Shop " + str(shopNumber)
+        shop_Name = "Shop " + str(shopNumber)
         for hour in range(0, 24):
-            listOfShopNameAndTime.append((shopName, year, month, day, hour))
+            listOfShopNameAndTime.append((shop_Name, year, month, day, hour))
 
     with ThreadPoolExecutor(numberOfThreads) as executor:
         listOfResults = executor.map(processTransactionsAndReturn, listOfShopNameAndTime)
@@ -192,12 +242,19 @@ def processTransactionsParallely(year, month, day, numberOfThreads):
                 allItemsMaster["item_weight"].append(None)
                 allItemsMaster["item_volume"].append(None)
                 allItemsMaster["sold"].append(0)
-                allItemsMaster["sold_amount"].append(0)
                 allItemsMaster["member"].append(0)
                 allItemsMaster["walk_in"].append(0)
                 allItemsMaster["male"].append(0)
                 allItemsMaster["female"].append(0)
                 allItemsMaster["age"].append(0)
+                allItemsMaster["pay_cash"].append(0)
+                allItemsMaster["pay_card"].append(0)
+                allItemsMaster["pay_ewallet"].append(0)
+
+                for shopNumber in range(1, 46):
+                    shopName = "Shop " + str(shopNumber)
+                    allItemsMaster[shopName].append(0)
+
             item_index_master = allItemsMaster["item_id"].index(item_id)
 
             # Basic information of item
@@ -222,8 +279,6 @@ def processTransactionsParallely(year, month, day, numberOfThreads):
             # Sales information of item
             allItemsMaster["sold"][item_index_master] = allItemsMaster["sold"][item_index_master] + allItemsOfThisHourAndShop["sold"][
                 item_index]
-            allItemsMaster["sold_amount"][item_index_master] = allItemsMaster["sold_amount"][item_index_master] + \
-                                                     allItemsOfThisHourAndShop["sold_amount"][item_index]
 
             # Information of people buying the item
             allItemsMaster["member"][item_index_master] = allItemsMaster["member"][item_index_master] + \
@@ -244,6 +299,19 @@ def processTransactionsParallely(year, month, day, numberOfThreads):
                 allItemsMaster["age"][item_index_master] = (averageAgeMaster + averageAge_thisHourAndShop) / 2
             elif averageAge_thisHourAndShop != 0:
                 allItemsMaster["age"][item_index_master] = averageAge_thisHourAndShop
+
+            allItemsMaster["pay_cash"][item_index_master] = allItemsMaster["pay_cash"][item_index_master] + \
+                                                            allItemsOfThisHourAndShop["pay_cash"][item_index]
+            allItemsMaster["pay_card"][item_index_master] = allItemsMaster["pay_card"][item_index_master] + \
+                                                            allItemsOfThisHourAndShop["pay_card"][item_index]
+            allItemsMaster["pay_ewallet"][item_index_master] = allItemsMaster["pay_ewallet"][item_index_master] + \
+                                                            allItemsOfThisHourAndShop["pay_ewallet"][item_index]
+
+            # Shop distribution
+            for shopNumber in range(1, 46):
+                shopName = "Shop " + str(shopNumber)
+                allItemsMaster[shopName][item_index_master] = allItemsMaster[shopName][item_index_master] + \
+                                                                allItemsOfThisHourAndShop[shopName][item_index]
 
             item_index = item_index + 1
 

@@ -9,3 +9,4 @@ stored in Dummy analysis results folder.
 Time analysis results folder contains the results of all experiments:
 
 -Sequential processing time of different number of transactions
+-Parallel processing time of different number of transactions
