@@ -26,12 +26,9 @@ def processTransactionsAndReturn(shopNameAndTime):
         "age": [],
         "pay_cash": [],
         "pay_card": [],
-        "pay_ewallet": []
+        "pay_ewallet": [],
+        shopName: []
     }
-
-    for shopNumber in range(1, 46):
-        shopName = "Shop " + str(shopNumber)
-        allItems[shopName] = []
 
     startOfHour = datetime.datetime(year, month, day, hour, 0, 0)
     endOfHour = datetime.datetime(year, month, day, hour, 59, 59)
@@ -49,7 +46,7 @@ def processTransactionsAndReturn(shopNameAndTime):
             # Most of the following lines reused script in ProcessTransactionsGeneratedSequentially.py
             # Skip if item is missing
             if "item" not in transaction.keys():
-                return
+                continue
 
             # Set isMember flag
             isMember = False
@@ -121,10 +118,7 @@ def processTransactionsAndReturn(shopNameAndTime):
                     allItems["pay_cash"].append(0)
                     allItems["pay_card"].append(0)
                     allItems["pay_ewallet"].append(0)
-
-                    for shopNumber in range(1, 46):
-                        shop_Name = "Shop " + str(shopNumber)
-                        allItems[shop_Name].append(0)
+                    allItems[shopName].append(0)
 
                 item_index = allItems["item_id"].index(item_id)
 
@@ -179,7 +173,7 @@ def processTransactionsAndReturn(shopNameAndTime):
                             averageAge = (averageAge + age) / 2
                             allItems["age"][item_index] = averageAge
 
-                # Increment the number of people using the relevant pay method and buying at the relevant shop
+                # Increment the number of people using the relevant pay method
                 if payCash:
                     allItems["pay_cash"][item_index] = allItems["pay_cash"][item_index] + 1
                 elif payCard:
@@ -187,8 +181,8 @@ def processTransactionsAndReturn(shopNameAndTime):
                 elif payEWallet:
                     allItems["pay_ewallet"][item_index] = allItems["pay_ewallet"][item_index] + 1
 
-                if shopName in allItems.keys():
-                    allItems[shopName][item_index] = allItems[shopName][item_index] + 1
+                # Increment the number of people buying from current shop
+                allItems[shopName][item_index] = allItems[shopName][item_index] + 1
 
     return allItems
 
@@ -252,8 +246,8 @@ def processTransactionsParallely(year, month, day, numberOfThreads):
                 allItemsMaster["pay_ewallet"].append(0)
 
                 for shopNumber in range(1, 46):
-                    shopName = "Shop " + str(shopNumber)
-                    allItemsMaster[shopName].append(0)
+                    shop_Name = "Shop " + str(shopNumber)
+                    allItemsMaster[shop_Name].append(0)
 
             item_index_master = allItemsMaster["item_id"].index(item_id)
 
@@ -308,10 +302,8 @@ def processTransactionsParallely(year, month, day, numberOfThreads):
                                                             allItemsOfThisHourAndShop["pay_ewallet"][item_index]
 
             # Shop distribution
-            for shopNumber in range(1, 46):
-                shopName = "Shop " + str(shopNumber)
-                allItemsMaster[shopName][item_index_master] = allItemsMaster[shopName][item_index_master] + \
-                                                                allItemsOfThisHourAndShop[shopName][item_index]
+            shopName = list(allItemsOfThisHourAndShop.keys())[-1]
+            allItemsMaster[shopName][item_index_master] = allItemsMaster[shopName][item_index_master] + allItemsOfThisHourAndShop[shopName][item_index]
 
             item_index = item_index + 1
 
