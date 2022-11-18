@@ -250,3 +250,43 @@ ggplot(data = data_food_weight,
        y = "Number of LSOAs",
        caption = "binwidth = 0.015")
 
+
+# Get details in maximum, minimum and first and third quartiles
+distribution_dairy_eggs <- 
+  summary(data_food_weight$f_dairy_eggs_weight)
+print(distribution_dairy_eggs)
+dataFrameDistribution <-
+  data.frame("f_dairy_eggs_weight",
+             as.numeric(distribution_dairy_eggs[1]),
+             as.numeric(distribution_dairy_eggs[2]),
+             as.numeric(distribution_dairy_eggs[3]),
+             as.numeric(distribution_dairy_eggs[4]),
+             as.numeric(distribution_dairy_eggs[5]),
+             as.numeric(distribution_dairy_eggs[6]))
+colnames(dataFrameDistribution) <-
+  c("Category", "Minimum", "First quartile", "Median", 
+    "Mean", "Third quartile", "Maximum")
+View(dataFrameDistribution)
+
+for (category in c("f_fruit_veg_weight",
+                   "f_grains_weight",
+                   "f_oils_sauces_weight",
+                   "f_sweets_weight",
+                   "f_fish_meat_weight",
+                   "f_readymade_weight")){
+  distribution_category <- 
+    summary(data_food_weight[[category]])
+  dataFrameDistribution <-
+    rbind.data.frame(dataFrameDistribution,
+                     c(category,
+                       as.numeric(distribution_category[1]),
+                       as.numeric(distribution_category[2]),
+                       as.numeric(distribution_category[3]),
+                       as.numeric(distribution_category[4]),
+                       as.numeric(distribution_category[5]),
+                       as.numeric(distribution_category[6])))
+}
+
+# Write to CSV file for future reference
+write.csv(dataFrameDistribution, "C:/Users/user/Desktop/Big-Data-Programming-Project/Grocery-Data-Project/Descriptive Analysis/Statistical distribution of fraction of food purchase by weight.csv")
+

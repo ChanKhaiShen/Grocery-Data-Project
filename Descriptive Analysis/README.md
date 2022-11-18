@@ -11,3 +11,7 @@ f_alcoholic_drinks = f_beer + f_spirits + f_wine
 f_non_alcoholic_drinks = f_soft_drinks + f_tea_coffee + f_water
 f_oils_sauces = f_fats_oils + f_sauces
 
+The seven histograms in this folder visualizes the statistical distribution of the fractions of dairy and eggs, fish and meat, fruit and vegetable, grains, oils and sauces, readymade and sweets, by weight, respectively.
+
+The box plot in this folder compares the statistical distribution of these fractions on the same plot.
+
