@@ -1,4 +1,3 @@
-# Big-Data-Programming-Project
-Windows based data science programming project done by Chan Khai Shen. 
+# Grocery-Data-Project
+Project of 5011CEM Big Data Programming Porject.
 
-This is a line to test connection from RStudio.
